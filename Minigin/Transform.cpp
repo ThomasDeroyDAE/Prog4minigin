@@ -1,8 +1,51 @@
 #include "Transform.h"
+#include "GameObject.h" 
 
-void dae::Transform::SetPosition(const float x, const float y, const float z)
+namespace dae
 {
-	m_position.x = x;
-	m_position.y = y;
-	m_position.z = z;
+	void Transform::SetLocalPosition(const glm::vec3& pos)
+	{
+		if (m_LocalPosition != pos)
+		{
+			m_LocalPosition = pos;
+			SetPositionDirty();
+		}
+	}
+
+	const glm::vec3& Transform::GetWorldPosition() const
+	{
+		if (m_PositionIsDirty)
+			const_cast<Transform*>(this)->UpdateWorldPosition(); 
+
+		return m_WorldPosition;
+	}
+
+	void Transform::SetWorldPosition(const glm::vec3& pos)
+	{
+		if (m_Owner && m_Owner->GetParent())
+		{
+			glm::vec3 parentWorldPos = m_Owner->GetParent()->GetTransform().GetWorldPosition();
+			m_LocalPosition = pos - parentWorldPos;
+		}
+		else
+		{
+			m_LocalPosition = pos;
+		}
+
+		SetPositionDirty();
+	}
+
+	void Transform::UpdateWorldPosition()
+	{
+		if (m_PositionIsDirty)
+		{
+			if (m_Owner && m_Owner->GetParent())
+				m_WorldPosition = m_Owner->GetParent()->GetTransform().GetWorldPosition() + m_LocalPosition;
+			else
+				m_WorldPosition = m_LocalPosition;
+
+			m_PositionIsDirty = false;
+		}
+	}
 }
+
